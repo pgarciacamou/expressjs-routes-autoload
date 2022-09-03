@@ -1,10 +1,11 @@
-import { Router } from "express";
+import { ICustomRouter } from "./utils/getRoutesRecursively";
 
 export function RoutesLoader(
   loadPath: string,
-  options: { recursive?: boolean } = {}
-): Router {
+  options: { recursive?: boolean; dirname?: string } = {}
+): ICustomRouter {
   const recursive: boolean = options.recursive !== false; // defaults to true
+  const dirname: string = options.dirname || process.cwd();
 
   const express = require("express");
   const fs = require("fs");
@@ -13,6 +14,13 @@ export function RoutesLoader(
   let router = express.Router();
 
   if (!loadPath) loadPath = "./routes";
+
+  // Check for relative paths
+  // https://stackoverflow.com/a/30714706/4984618
+  const isAbsolute =
+    path.normalize(loadPath + "/") ===
+    path.normalize(path.resolve(loadPath) + "/");
+  if (!isAbsolute) loadPath = path.join(dirname, loadPath);
 
   const walk = (dir: string) => {
     let results: string[] = [];
@@ -134,9 +142,22 @@ export function RoutesLoader(
       path.basename(file).substr(0, 1) !== "."
     ) {
       try {
-        const r = require(file);
-        router = (r.default || r)(router);
-      } catch (e) {
+        const dir = path.dirname(file).replace(loadPath, "");
+        const name = path.basename(file, path.extname(file));
+        const isIndex = name === "index";
+        const route = isIndex ? dir : path.join("/", dir, name);
+        const module = require(file);
+        const handler = module.default || module;
+
+        if (handler instanceof Function) {
+          const nestedRouter = express.Router();
+          nestedRouter.__dir_path__ = route; // used for extracting routes
+          handler(nestedRouter);
+          router.use(route, nestedRouter);
+        } else {
+          throw new Error("A function must be exported");
+        }
+      } catch (e: any) {
         throw new Error(
           "Error when loading route file: " + file + " [" + e.toString() + "]"
         );

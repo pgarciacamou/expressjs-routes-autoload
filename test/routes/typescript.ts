@@ -1,10 +1,11 @@
-import { Request, Response, Router } from 'express';
+import { Request, Response, Router } from "express";
 
-export default function (router: Router): Router {
+export default function (router: Router) {
+  router.get("/", (_req: Request, res: Response) => {
+    res.send("typescript");
+  });
 
-    router.get('/typescript', (_req: Request, res: Response) => {
-        res.send('typescript');
-    });
-
-    return router;
+  router.get("*", (_req: Request, res: Response) => {
+    res.send("typescript/any");
+  });
 }
