@@ -1,6 +1,6 @@
 import { IRoute, IRouter } from "express";
 
-type TStack = Array<ILayer>;
+type TStack = ILayer[];
 
 export interface ICustomRouter extends IRouter {
   stack: TStack;
@@ -15,7 +15,7 @@ interface ILayer {
   method: string;
 }
 
-export function getRoutesRecursively(router: ICustomRouter) {
+export function getRoutesRecursively(router: ICustomRouter): string[] {
   const path = require("path");
 
   const currentRoutes = router.stack.filter((layer: ILayer) => layer.route);
@@ -24,7 +24,7 @@ export function getRoutesRecursively(router: ICustomRouter) {
     (stack: ILayer) => stack.name === "router"
   );
 
-  let routes: Array<string> = [];
+  let routes: string[] = [];
 
   // Routes in current router
   currentRoutes.forEach((layer: ILayer) => {
