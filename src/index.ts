@@ -1,17 +1,21 @@
-import { ICustomRouter } from "./utils/getRoutesRecursively";
+import {
+  getRoutesRecursively,
+  ICustomRouter,
+} from "./utils/getRoutesRecursively";
 
 export function RoutesLoader(
   loadPath: string,
-  options: { recursive?: boolean; dirname?: string } = {}
+  options: { recursive?: boolean; dirname?: string; logRoutes?: boolean } = {}
 ): ICustomRouter {
   const recursive: boolean = options.recursive !== false; // defaults to true
   const dirname: string = options.dirname || process.cwd();
+  const logRoutes: boolean = options.logRoutes !== false; // defaults to true
 
   const express = require("express");
   const fs = require("fs");
   const path = require("path");
 
-  let router = express.Router();
+  const router = express.Router();
 
   if (!loadPath) loadPath = "./routes";
 
@@ -37,7 +41,7 @@ export function RoutesLoader(
     return results;
   };
 
-  let files = recursive ? walk(loadPath) : fs.readdirSync(loadPath);
+  const files = recursive ? walk(loadPath) : fs.readdirSync(loadPath);
 
   /**
    * =======================================
@@ -61,7 +65,7 @@ export function RoutesLoader(
    * The difference being; this algorithm compares segment to segment instead of
    * computing the score for the entire route.
    */
-  function getSegmentScore(segment: string = "") {
+  function getSegmentScore(segment: string = ""): number {
     segment = segment.replace(path.extname(segment), ""); // remove extension
 
     if (!segment) {
@@ -163,6 +167,10 @@ export function RoutesLoader(
         );
       }
     }
+  }
+
+  if (logRoutes) {
+    console.log(getRoutesRecursively(router));
   }
 
   return router;
